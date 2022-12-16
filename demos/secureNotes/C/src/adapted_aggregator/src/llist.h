@@ -30,7 +30,7 @@ SOFTWARE.
 
 typedef struct node_t {
   //store the unique idnetifier 
-  long unique_identifier;
+  uint64_t unique_identifier;
   //store the name of the text file 
   char* name_String;
   //store the body of the text file 

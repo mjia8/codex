@@ -1,0 +1,26 @@
+<!-- GET /post-unique-id-thing-here: put the id and then edit the note-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Secure Notes!</title>
+</head>
+<body>
+	<form method="post" action="/edit">
+	<table>
+		<tr>
+			<td>Note Title</td>
+			<td><input type="text" name="title" value="NOTES_TITLE_HERE"/></td>
+		</tr>
+		<tr>
+			<td>Note contents</td>
+			<td><textarea name="contents" rows="5" cols="30" value="NOTES_CONTENT_HERE" /></td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td><input type="submit" value="Save" /></td>
+		</tr>
+	</table>
+	</form>
+</body>
+</html>

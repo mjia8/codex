@@ -2,8 +2,10 @@
 #define www_h__
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <llist.h> 
 
 // Modelled after
 // https://github.com/Dungyichao/http_server/blob/master/src/helloworld.cpp
@@ -14,7 +16,8 @@
 #define WORD_SIZE 5
 
 typedef struct {
-    char secret_word[WORD_SIZE];
+    node_t notes;
+    node_t unique_identifiers; 
     int server_fd;
     struct sockaddr_in address;
 } WebServer;

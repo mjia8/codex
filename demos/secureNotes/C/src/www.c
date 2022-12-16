@@ -35,6 +35,10 @@ WebServer* CreateWebServerWithPort(uint16_t port) {
         exit(EXIT_FAILURE);
     }
 
+    //MY: init the linked lists 
+    list_init(&notes);
+    list_init(&unique_identifiers); 
+
     unsigned int randIndex = rand() % (sizeof(wordlist)/6u);
 #ifdef DEBUG
     printf("randIndex: %d\nsizeof(wordlist): %ld\nNum words: %ld\n", randIndex, sizeof(wordlist), sizeof(wordlist)/6u);
@@ -124,7 +128,6 @@ void RunWebServer(WebServer *server) {
         printf("\n");
         fflush(stdout);
 #endif
-        //After the user presses the link to create a new note, the user will be able to create a new note 
         if (buffer[0] != 0x47 || buffer[1] != 0x45 || buffer[2] != 0x54) { // !GET
             write(new_socket, HTTP_NOT_FOUND, sizeof(HTTP_NOT_FOUND));
             write(new_socket, CONTENT_TYPE_PLAIN, sizeof(CONTENT_TYPE_PLAIN));
@@ -138,14 +141,15 @@ void RunWebServer(WebServer *server) {
             continue;
         }
 
+        //MY: The user will be able to display the landing page (GET). 
         if (buffer[4] == 0x2F && buffer[5] == 0x20) { // forward slash and space
 #ifdef DEBUG
-            printf("Root page, show gameboard\n");
+            printf("Root page, show doc\n");
             fflush(stdout);
 #endif
             write(new_socket, HTTP_OK, sizeof(HTTP_OK));
             write(new_socket, CONTENT_TYPE_HTML, sizeof(CONTENT_TYPE_HTML));
-            write_all(new_socket, board, sizeof(board));
+            write_all(new_socket, startPage, sizeof(startPage));
 #ifdef DEBUG
             printf("Closing socket.\n");
             fflush(stdout);
@@ -155,14 +159,29 @@ void RunWebServer(WebServer *server) {
             continue;
         }
 
-        if (buffer[4] == 0x2F && buffer[5] == 0x6A && buffer[6] == 0x71 && buffer[7] == 0x75) { // forward slash jqu
+        //MY: The user will be able to create a new note by clicking on the save button (/POST/NEW). 
+        if (buffer[4] == 0x2F && buffer[5] == 0x70 && buffer[6] ==0x6F && buffer[8] ==0x73 && buffer[9] == 0x74 && buffer[10] == 0x2F && buffer[11] == 0x6E && buffer[12] == 0x65 && buffer[13] == 0x77 ) { 
 #ifdef DEBUG
-            printf("JQuery requested\n");
+            printf("Root page, show doc\n");
             fflush(stdout);
 #endif
             write(new_socket, HTTP_OK, sizeof(HTTP_OK));
-            write(new_socket, CONTENT_TYPE_JAVASCRIPT, sizeof(CONTENT_TYPE_JAVASCRIPT));
-            write_all(new_socket, jquery, sizeof(jquery));
+            write(new_socket, CONTENT_TYPE_HTML, sizeof(CONTENT_TYPE_HTML));
+            write_all(new_socket, editPage, sizeof(editPage));
+            //MY: add the notes to the linked list and then add the unique identifier to the linked list as well 
+            uint64_t unique_key;
+            char[33]  buffer_k; 
+            //Generate a random long to use as a unique ID for the user to store their notes.  
+            unique_key = random();
+            sprintf(buffer_k, "%lu", unique_key);
+            //Retreive the data that the user inputs from buffer 
+            int length = size(buffer) - 10; 
+            char *text= buffer + length;
+            add_string(&notes, text);
+            add_string(&unique_identifiers,buffer_k);
+            //MY: display the unique key to the user
+            printf("Remember your unique key:")
+            printf(unique_key)
 #ifdef DEBUG
             printf("Closing socket.\n");
             fflush(stdout);
@@ -172,13 +191,90 @@ void RunWebServer(WebServer *server) {
             continue;
         }
 
-        if (buffer[4] == 0x2f && buffer[5] == 0x67 && buffer[6] == 0x75 && buffer[7] == 0x65 && buffer[8] == 0x73 && buffer[9] == 0x73) {
-            int j;
-            char *word = buffer + 16;
-            char response[WORD_SIZE];
-            for(i = 0; i < WORD_SIZE; i++) {
-                response[i] = 'c';
+        //MY: The user will be able to view a pre-existing note: /get/view 
+        if (buffer[4] == 0x2F && buffer[5] == 0x67 && buffer[6] ==0x65 && buffer[8] ==0x74 && buffer[9] == 0x2f && buffer[10] == 0x76 && buffer[11] == 0x69 && buffer[12] == 0x65 && buffer[13] == 0x77 ) { 
+#ifdef DEBUG
+            printf("Root page, show doc\n");
+            fflush(stdout);
+#endif
+            write(new_socket, HTTP_OK, sizeof(HTTP_OK));
+            write(new_socket, CONTENT_TYPE_HTML, sizeof(CONTENT_TYPE_HTML));
+            write_all(new_socket, viewPage, sizeof(viewPage));
+            
+            int visible = 0; 
+            //get the unique ID and return the note
+            char *word = buffer + 32;
+            head_notes = &notes;
+            head_id = &unique_identifiers
+            while (head != NULL) {
+                if (head != word) {
+                    head_notes = head_notes-> next; 
+                    head_id = head_id->next; 
+                }
+                else {
+                    //Print the notes. 
+                    visible = 1; 
+                    printf(head_notes); 
+                }
             }
+
+            //The ID is wrong.
+            if (visible != 1) {
+                printf("Wrong ID entered, please retry!"); 
+            }
+#ifdef DEBUG
+            printf("Closing socket.\n");
+            fflush(stdout);
+#endif
+            close(new_socket);
+            new_socket = 0;
+            continue;
+        }
+
+        //MY: The user will be able to edit a pre-existing note: /post/edit 
+        if (buffer[4] == 0x2F && buffer[5] == 0x70 && buffer[6] ==0x6f && buffer[8] ==0x73 && buffer[9] == 0x74 && buffer[10] == 0x2f && buffer[11] == 0x65 && buffer[12] == 0x64 && buffer[13] == 0x69 && buffer[14] == 0x74) { 
+#ifdef DEBUG
+            printf("Root page, show doc\n");
+            fflush(stdout);
+#endif
+            write(new_socket, HTTP_OK, sizeof(HTTP_OK));
+            write(new_socket, CONTENT_TYPE_HTML, sizeof(CONTENT_TYPE_HTML));
+            write_all(new_socket, editPage, sizeof(editPage));
+            
+            int length = size(buffer) - 11; 
+            char *text= buffer + length;
+
+            int visible = 0; 
+            //get the unique ID and return the note
+            char *word = buffer + 32;
+            head_notes = &notes;
+            head_id = &unique_identifiers
+            while (head != NULL) {
+                if (head != word) {
+                    head_notes = head_notes-> next; 
+                    head_id = head_id->next; 
+                }
+                else {
+                    //Print the notes. 
+                    visible = 1; 
+                    head_notes = &text; 
+                }
+            }
+
+            //The ID is wrong.
+            if (visible != 1) {
+                printf("Wrong ID entered, please retry!"); 
+            }
+#ifdef DEBUG
+            printf("Closing socket.\n");
+            fflush(stdout);
+#endif
+            close(new_socket);
+            new_socket = 0;
+            continue;
+        }
+
+
 #ifdef DEBUG
             printf("Guess: ");
             for(i = 0; i < WORD_SIZE; i++) {
@@ -200,7 +296,7 @@ void RunWebServer(WebServer *server) {
             }'''
             write(new_socket, HTTP_OK, sizeof(HTTP_OK));
             write(new_socket, CONTENT_TYPE_PLAIN, sizeof(CONTENT_TYPE_PLAIN));
-            write(new_socket, response, WORD_SIZE);
+            //Read the variables from the socket, look for the key and the rest will be the value 
 #ifdef DEBUG
             printf("Closing socket.\n");
             fflush(stdout);
